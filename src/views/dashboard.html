@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Inter', sans-serif; }
+        .modal { background-color: rgba(0,0,0,0.7); }
+    </style>
+</head>
+<body class="p-8">
+    <div id="app" class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-white">Portfolio Admin</h1>
+            <a href="/admin/logout" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">Logout</a>
+        </div>
+
+        <div v-if="loading" class="text-center py-10">Loading...</div>
+
+        <div v-else>
+            <!-- Projects Section -->
+            <section class="mb-12 bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-white">Projects</h2>
+                    <button @click="openModal('project')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">+ Add Project</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4">Title</th>
+                                <th class="py-3 px-4">Order</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in data.projects" :key="item.id" class="border-b border-gray-800 hover:bg-gray-800">
+                                <td class="py-3 px-4">{{ item.title }}</td>
+                                <td class="py-3 px-4">{{ item.sort_order }}</td>
+                                <td class="py-3 px-4 text-right">
+                                    <button @click="editItem('project', item)" class="text-blue-400 hover:text-blue-300 mr-3">Edit</button>
+                                    <button @click="deleteItem('projects', item.id)" class="text-red-400 hover:text-red-300">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Skills Section -->
+            <section class="mb-12 bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-white">Skills</h2>
+                    <button @click="openModal('skill')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">+ Add Skill</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4">Name</th>
+                                <th class="py-3 px-4">Category</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in data.skills" :key="item.id" class="border-b border-gray-800 hover:bg-gray-800">
+                                <td class="py-3 px-4">{{ item.name }}</td>
+                                <td class="py-3 px-4">{{ item.category }}</td>
+                                <td class="py-3 px-4 text-right">
+                                    <button @click="editItem('skill', item)" class="text-blue-400 hover:text-blue-300 mr-3">Edit</button>
+                                    <button @click="deleteItem('skills', item.id)" class="text-red-400 hover:text-red-300">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Certificates Section -->
+            <section class="mb-12 bg-gray-900 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-white">Certificates</h2>
+                    <button @click="openModal('certificate')" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">+ Add Cert</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-3 px-4">Title</th>
+                                <th class="py-3 px-4">Issuer</th>
+                                <th class="py-3 px-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in data.certificates" :key="item.id" class="border-b border-gray-800 hover:bg-gray-800">
+                                <td class="py-3 px-4">{{ item.title }}</td>
+                                <td class="py-3 px-4">{{ item.issuer }}</td>
+                                <td class="py-3 px-4 text-right">
+                                    <button @click="editItem('certificate', item)" class="text-blue-400 hover:text-blue-300 mr-3">Edit</button>
+                                    <button @click="deleteItem('certificates', item.id)" class="text-red-400 hover:text-red-300">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Editor Modal -->
+        <div v-if="modal.open" class="fixed inset-0 modal flex items-center justify-center p-4">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-lg w-full">
+                <h3 class="text-xl font-bold text-white mb-4">{{ modal.isEdit ? 'Edit' : 'Add' }} {{ modal.type }}</h3>
+                <form @submit.prevent="saveItem">
+                    
+                    <!-- Dynamic fields based on type -->
+                    <div v-if="modal.type === 'project'" class="space-y-4">
+                        <div><label class="block mb-1 text-sm">Title</label><input v-model="modal.formData.title" class="w-full p-2 bg-gray-700 rounded border border-gray-600" required></div>
+                        <div><label class="block mb-1 text-sm">Description</label><textarea v-model="modal.formData.description" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></textarea></div>
+                        <div><label class="block mb-1 text-sm">Image URL</label><input v-model="modal.formData.image_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Tech Stack (comma separated)</label><input :value="modal.formData.tech_stack?.join(', ')" @input="modal.formData.tech_stack = $event.target.value.split(',').map(s=>s.trim())" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Live URL</label><input v-model="modal.formData.live_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">GitHub URL</label><input v-model="modal.formData.github_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Sort Order</label><input type="number" v-model="modal.formData.sort_order" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                    </div>
+
+                    <div v-if="modal.type === 'skill'" class="space-y-4">
+                        <div><label class="block mb-1 text-sm">Name</label><input v-model="modal.formData.name" class="w-full p-2 bg-gray-700 rounded border border-gray-600" required></div>
+                        <div><label class="block mb-1 text-sm">Category</label><input v-model="modal.formData.category" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Proficiency (0-100)</label><input type="number" v-model="modal.formData.proficiency" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Icon URL</label><input v-model="modal.formData.icon_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Sort Order</label><input type="number" v-model="modal.formData.sort_order" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                    </div>
+
+                    <div v-if="modal.type === 'certificate'" class="space-y-4">
+                        <div><label class="block mb-1 text-sm">Title</label><input v-model="modal.formData.title" class="w-full p-2 bg-gray-700 rounded border border-gray-600" required></div>
+                        <div><label class="block mb-1 text-sm">Issuer</label><input v-model="modal.formData.issuer" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Date</label><input v-model="modal.formData.date" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Credential URL</label><input v-model="modal.formData.credential_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Image URL</label><input v-model="modal.formData.image_url" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                        <div><label class="block mb-1 text-sm">Sort Order</label><input type="number" v-model="modal.formData.sort_order" class="w-full p-2 bg-gray-700 rounded border border-gray-600"></div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" @click="modal.open = false" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded">Cancel</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    loading: true,
+                    data: { projects: [], skills: [], certificates: [] },
+                    modal: { open: false, type: '', isEdit: false, formData: {} }
+                }
+            },
+            async mounted() {
+                await this.fetchData();
+            },
+            methods: {
+                async fetchData() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/admin/api/data');
+                        if (res.status === 401) window.location.href = '/admin/login';
+                        this.data = await res.json();
+                    } catch (e) { console.error(e); }
+                    this.loading = false;
+                },
+                openModal(type) {
+                    this.modal = { open: true, type, isEdit: false, formData: { sort_order: 0 } };
+                },
+                editItem(type, item) {
+                    this.modal = { open: true, type, isEdit: true, formData: { ...item } };
+                },
+                async deleteItem(collection, id) {
+                    if(!confirm('Are you sure?')) return;
+                    try {
+                        await fetch(`/admin/api/${collection}/${id}`, { method: 'DELETE' });
+                        await this.fetchData();
+                    } catch(e) { alert('Error deleting'); }
+                },
+                async saveItem() {
+                    const collection = this.modal.type + 's';
+                    const method = this.modal.isEdit ? 'PUT' : 'POST';
+                    const url = `/admin/api/${collection}` + (this.modal.isEdit ? `/${this.modal.formData.id}` : '');
+                    
+                    try {
+                        const res = await fetch(url, {
+                            method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.modal.formData)
+                        });
+                        if(res.ok) {
+                            this.modal.open = false;
+                            await this.fetchData();
+                        } else {
+                            const err = await res.json();
+                            alert(err.error || 'Failed to save');
+                        }
+                    } catch(e) {
+                        alert('Network error');
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
