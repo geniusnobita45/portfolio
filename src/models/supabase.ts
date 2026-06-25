@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import WebSocket from 'ws';
 
 dotenv.config();
+
+// Polyfill WebSocket for Node < 22
+(global as any).WebSocket = WebSocket;
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -14,11 +18,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Public client (read-only, uses anon key with RLS)
 export const supabase = createClient(
     supabaseUrl || '',
-    supabaseAnonKey || ''
+    supabaseAnonKey || '',
+    { auth: { persistSession: false } }
 );
 
 // Admin client (bypasses RLS, uses service role key — for admin CRUD only)
 export const supabaseAdmin = createClient(
     supabaseUrl || '',
-    supabaseServiceKey || supabaseAnonKey || ''
+    supabaseServiceKey || supabaseAnonKey || '',
+    { auth: { persistSession: false } }
 );
