@@ -15,8 +15,9 @@ const transporter = nodemailer.createTransport({
 
 export const sendContactEmail = async (name: string, email: string, message: string) => {
     const mailOptions = {
-        from: `"${name}" <${email}>`, // Note: Some SMTP servers might reject spoofed 'from' addresses, in which case use SMTP_USER and set replyTo
-        to: process.env.TO_EMAIL,
+        from: `"${name} (Portfolio)" <${process.env.SMTP_USER}>`, // Send from authenticated user to prevent spam rejection
+        replyTo: email,
+        to: process.env.NOTIFICATION_EMAIL || process.env.TO_EMAIL, // Try both env vars just in case
         subject: `New Portfolio Contact from ${name}`,
         text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
         html: `<p><strong>Name:</strong> ${name}</p>
